@@ -1,0 +1,44 @@
+cmake_minimum_required(VERSION 3.10)
+project(cmake_sample)
+
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
+message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+
+###### Build deps ######
+set(DEPS_BUILD_DIR ${PROJECT_BINARY_DIR}/.deps)
+file(MAKE_DIRECTORY ${DEPS_BUILD_DIR})
+
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR}
+        -D CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+        -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -D CMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -D CMAKE_C_FLAGS_DEBUG=${CMAKE_C_FLAGS_DEBUG}
+        -D CMAKE_C_FLAGS_MINSIZEREL=${CMAKE_C_FLAGS_MINSIZEREL}
+        -D CMAKE_C_FLAGS_RELWITHDEBINFO=${CMAKE_C_FLAGS_RELWITHDEBINFO}
+        -D CMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
+        -D CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        ${PROJECT_SOURCE_DIR}/cmake.deps
+        WORKING_DIRECTORY ${DEPS_BUILD_DIR})
+
+execute_process(
+        COMMAND ${CMAKE_COMMAND} --build ${DEPS_BUILD_DIR}
+        --config ${CMAKE_BUILD_TYPE})
+
+set(DEPS_PREFIX ${DEPS_BUILD_DIR})
+list(INSERT CMAKE_PREFIX_PATH 0 ${DEPS_PREFIX})
+
+include(FindLuajit)
+
+add_executable(main main.c)
+target_include_directories(main PUBLIC ${LUAJIT_INCLUDE_DIR})
+target_link_libraries(main
+    ${LUAJIT_LIBRARIES}
+)
+
